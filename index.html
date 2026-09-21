@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>게임 환전비 계산기</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1e222b;
+      --text: #f5f7fb;
+      --muted: #9aa4b2;
+      --line: #2b313c;
+      --accent: #7c9cff;
+      --danger: #ff6b6b;
+      --input: #11141a;
+      --shadow: 0 12px 30px rgba(0,0,0,.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0d0f13, #13161c 45%, #0d0f13);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
+    }
+
+    .hero {
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(26px, 5vw, 40px);
+      letter-spacing: -0.04em;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    button, select {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #46516a;
+    }
+
+    .primary {
+      background: var(--accent);
+      border-color: transparent;
+      color: white;
+      font-weight: 700;
+    }
+
+    .card {
+      background: rgba(23, 26, 33, .96);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #141820;
+      color: #cbd4df;
+      font-size: 13px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: rgba(255,255,255,.02);
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--input);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 11px;
+      font-size: 15px;
+      outline: none;
+      text-align: center;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,156,255,.12);
+    }
+
+    .currency-input {
+      position: relative;
+    }
+
+    .currency-input input {
+      padding-right: 34px;
+    }
+
+    .currency-input::after {
+      content: "원";
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+
+    .rate {
+      font-size: 18px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .fixed-value {
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .cash {
+      color: #d9e0ea;
+      white-space: nowrap;
+    }
+
+    .net {
+      color: #c8d2ff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .delete {
+      background: transparent;
+      color: var(--danger);
+      border-color: rgba(255,107,107,.28);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .note {
+      padding: 14px 16px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 640px) {
+      .wrap { padding-top: 20px; }
+      .toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+      .toolbar button, .toolbar select { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>경매장 테라 환전비 계산기</h1>
+      <div class="sub">
+        경매장 판매금액에서 수수료 10%를 제외한 뒤 현금 가격으로 나눠 환전비를 계산합니다.
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <select id="sortSelect" aria-label="정렬">
+        <option value="none">기본 순서</option>
+        <option value="high">환전비 높은 순</option>
+        <option value="low">환전비 낮은 순</option>
+      </select>
+      <button id="saveBtn">저장</button>
+      <button id="resetBtn">초기화</button>
+    </div>
+
+    <div class="card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%">물품명</th>
+              <th style="width: 20%">경매장 가격</th>
+              <th style="width: 20%">수수료 제외 금액</th>
+              <th style="width: 17%">세라 가격</th>
+              <th style="width: 13%">환전비</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="note">
+        계산식: <b>(경매장 가격 × 0.9) ÷ 현금 가격</b> → <b>1 : 환전비</b><br>
+        물품명과 현금 가격은 고정되어 있습니다. 저장 버튼을 누르면 입력한 경매장 가격이 이 기기 브라우저에 저장됩니다.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "game_exchange_auction_prices_v2";
+    const tbody = document.getElementById("tbody");
+    const sortSelect = document.getElementById("sortSelect");
+
+    // 물품명과 현금 가격은 이 목록에서만 변경할 수 있습니다.
+    const FIXED_ITEMS = [
+      { id: "item-1", name: "바인드큐브", cash: 1000 },
+      { id: "item-2", name: "촉매제", cash: 2500 },
+      { id: "item-3", name: "마스터계약", cash: 5000 },
+      { id: "item-4", name: "아티팩트", cash: 33000 },
+      { id: "item-5", name: "주또주", cash: 38900 },
+      { id: "item-6", name: "이클립스 바큐", cash: 1900 }
+
+
+
+    ];
+
+    let rows = FIXED_ITEMS.map(item => ({ ...item, auction: "" }));
+
+    function numberOnly(value) {
+      return Number(String(value).replace(/\D/g, "")) || 0;
+    }
+
+    function normalizeCurrency(value) {
+      return String(value ?? "")
+        .replace(/\D/g, "")
+        .replace(/^0+(?=\d)/, "");
+    }
+
+    function formatCurrencyInput(value) {
+      const digits = normalizeCurrency(value);
+      return digits ? Number(digits).toLocaleString("ko-KR") : "";
+    }
+
+    function formatNumber(n) {
+      return Math.round(n).toLocaleString("ko-KR");
+    }
+
+    function getRate(row) {
+      const auction = numberOnly(row.auction);
+      const cash = numberOnly(row.cash);
+      if (!auction || !cash) return 0;
+      return (auction * 0.9) / cash;
+    }
+
+    function render() {
+      let displayRows = [...rows];
+      const sort = sortSelect.value;
+
+      if (sort === "high") {
+        displayRows.sort((a, b) => getRate(b) - getRate(a));
+      } else if (sort === "low") {
+        displayRows.sort((a, b) => getRate(a) - getRate(b));
+      }
+
+      tbody.innerHTML = "";
+
+      displayRows.forEach(row => {
+        const auction = numberOnly(row.auction);
+        const cash = numberOnly(row.cash);
+        const net = auction * 0.9;
+        const rate = getRate(row);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="fixed-value">${escapeHtml(row.name)}</td>
+          <td>
+            <div class="currency-input">
+              <input data-id="${row.id}" data-field="auction" inputmode="numeric"
+                value="${formatCurrencyInput(row.auction)}" placeholder="예: 1,000,000"
+                aria-label="${escapeHtml(row.name)} 경매장 가격(원)">
+            </div>
+          </td>
+          <td class="net">
+            ${auction ? formatNumber(net) : '<span class="empty">-</span>'}
+          </td>
+          <td class="fixed-value cash">${formatNumber(cash)}원</td>
+          <td class="rate">
+            ${rate ? `1 : ${formatRate(rate)}` : '<span class="empty">-</span>'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function formatRate(rate) {
+      const rounded = Math.round(rate * 100) / 100;
+      return rounded.toLocaleString("ko-KR", {
+        maximumFractionDigits: 2
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    tbody.addEventListener("input", (e) => {
+      const id = e.target.dataset.id;
+      const field = e.target.dataset.field;
+      if (!id || field !== "auction") return;
+
+      const row = rows.find(r => r.id === id);
+      if (!row) return;
+
+      row[field] = normalizeCurrency(e.target.value);
+
+      const currentFocusId = id;
+      render();
+      const input = tbody.querySelector(`[data-id="${currentFocusId}"][data-field="auction"]`);
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const auctionPrices = Object.fromEntries(
+        rows.map(row => [row.id, row.auction])
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(auctionPrices));
+      alert("저장했습니다.");
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (!confirm("입력한 내용을 초기화할까요?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      rows = FIXED_ITEMS.map(item => ({ ...item, auction: "" }));
+      sortSelect.value = "none";
+      render();
+    });
+
+    sortSelect.addEventListener("change", render);
+
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          rows = FIXED_ITEMS.map(item => ({
+            ...item,
+            auction: normalizeCurrency(parsed[item.id])
+          }));
+        }
+      } catch (_) {}
+    }
+
+    render();
+  </script>
+</body>
+</html>
