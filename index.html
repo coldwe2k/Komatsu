@@ -84,6 +84,7 @@
     }
 
     .card {
+      width: min(100%, 430px);
       background: rgba(23, 26, 33, .96);
       border: 1px solid var(--line);
       border-radius: 18px;
@@ -97,8 +98,8 @@
 
     table {
       width: 100%;
-      min-width: 820px;
       border-collapse: collapse;
+      table-layout: fixed;
     }
 
     th, td {
@@ -142,21 +143,43 @@
       box-shadow: 0 0 0 3px rgba(124,156,255,.12);
     }
 
+    .item-cell {
+      text-align: left;
+    }
+
+    .item-column {
+      width: 230px;
+      text-align: left;
+    }
+
+    .rate-column,
+    .rate {
+      text-align: left;
+    }
+
+    .item-name {
+      margin-bottom: 7px;
+    }
+
     .currency-input {
       position: relative;
+      width: min(180px, 100%);
     }
 
     .currency-input input {
-      padding-right: 34px;
+      height: 34px;
+      padding: 6px 31px 6px 9px;
+      border-radius: 8px;
+      font-size: 13px;
     }
 
     .currency-input::after {
       content: "원";
       position: absolute;
       top: 50%;
-      right: 12px;
+      right: 10px;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 12px;
       pointer-events: none;
       transform: translateY(-50%);
     }
@@ -170,17 +193,6 @@
     .fixed-value {
       font-weight: 700;
       line-height: 1.45;
-    }
-
-    .cash {
-      color: #d9e0ea;
-      white-space: nowrap;
-    }
-
-    .net {
-      color: #c8d2ff;
-      font-weight: 700;
-      white-space: nowrap;
     }
 
     .delete {
@@ -214,7 +226,7 @@
     <div class="hero">
       <h1>경매장 테라 환전비 계산기</h1>
       <div class="sub">
-        경매장 판매금액에서 수수료 10%를 제외한 뒤 현금 가격으로 나눠 환전비를 계산합니다.
+        경매장 가격을 입력하면 물품별 환전비를 계산합니다.
       </div>
     </div>
 
@@ -224,8 +236,6 @@
         <option value="high">환전비 높은 순</option>
         <option value="low">환전비 낮은 순</option>
       </select>
-      <button id="saveBtn">저장</button>
-      <button id="resetBtn">초기화</button>
     </div>
 
     <div class="card">
@@ -233,25 +243,17 @@
         <table>
           <thead>
             <tr>
-              <th style="width: 25%">물품명</th>
-              <th style="width: 20%">경매장 가격</th>
-              <th style="width: 20%">수수료 제외 금액</th>
-              <th style="width: 17%">세라 가격</th>
-              <th style="width: 13%">환전비</th>
+              <th class="item-column">물품명</th>
+              <th class="rate-column">환전비</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
       </div>
-      <div class="note">
-        계산식: <b>(경매장 가격 × 0.9) ÷ 현금 가격</b> → <b>1 : 환전비</b><br>
-        물품명과 현금 가격은 고정되어 있습니다. 저장 버튼을 누르면 입력한 경매장 가격이 이 기기 브라우저에 저장됩니다.
-      </div>
     </div>
   </div>
 
   <script>
-    const STORAGE_KEY = "game_exchange_auction_prices_v2";
     const tbody = document.getElementById("tbody");
     const sortSelect = document.getElementById("sortSelect");
 
@@ -263,8 +265,6 @@
       { id: "item-4", name: "아티팩트", cash: 33000 },
       { id: "item-5", name: "주또주", cash: 38900 },
       { id: "item-6", name: "이클립스 바큐", cash: 1900 }
-
-
 
     ];
 
@@ -283,10 +283,6 @@
     function formatCurrencyInput(value) {
       const digits = normalizeCurrency(value);
       return digits ? Number(digits).toLocaleString("ko-KR") : "";
-    }
-
-    function formatNumber(n) {
-      return Math.round(n).toLocaleString("ko-KR");
     }
 
     function getRate(row) {
@@ -309,25 +305,18 @@
       tbody.innerHTML = "";
 
       displayRows.forEach(row => {
-        const auction = numberOnly(row.auction);
-        const cash = numberOnly(row.cash);
-        const net = auction * 0.9;
         const rate = getRate(row);
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="fixed-value">${escapeHtml(row.name)}</td>
-          <td>
+          <td class="fixed-value item-cell">
+            <div class="item-name">${escapeHtml(row.name)}</div>
             <div class="currency-input">
               <input data-id="${row.id}" data-field="auction" inputmode="numeric"
                 value="${formatCurrencyInput(row.auction)}" placeholder="예: 1,000,000"
                 aria-label="${escapeHtml(row.name)} 경매장 가격(원)">
             </div>
           </td>
-          <td class="net">
-            ${auction ? formatNumber(net) : '<span class="empty">-</span>'}
-          </td>
-          <td class="fixed-value cash">${formatNumber(cash)}원</td>
           <td class="rate">
             ${rate ? `1 : ${formatRate(rate)}` : '<span class="empty">-</span>'}
           </td>
@@ -371,36 +360,7 @@
       }
     });
 
-    document.getElementById("saveBtn").addEventListener("click", () => {
-      const auctionPrices = Object.fromEntries(
-        rows.map(row => [row.id, row.auction])
-      );
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(auctionPrices));
-      alert("저장했습니다.");
-    });
-
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      if (!confirm("입력한 내용을 초기화할까요?")) return;
-      localStorage.removeItem(STORAGE_KEY);
-      rows = FIXED_ITEMS.map(item => ({ ...item, auction: "" }));
-      sortSelect.value = "none";
-      render();
-    });
-
     sortSelect.addEventListener("change", render);
-
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          rows = FIXED_ITEMS.map(item => ({
-            ...item,
-            auction: normalizeCurrency(parsed[item.id])
-          }));
-        }
-      } catch (_) {}
-    }
 
     render();
   </script>
