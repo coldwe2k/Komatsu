@@ -3,364 +3,493 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>게임 환전비 계산기</title>
+  <meta name="theme-color" content="#0b111b" />
+  <title>경매장 테라 환전비 계산기</title>
   <style>
     :root {
-      --bg: #0f1115;
-      --panel: #171a21;
-      --panel-2: #1e222b;
-      --text: #f5f7fb;
-      --muted: #9aa4b2;
-      --line: #2b313c;
-      --accent: #7c9cff;
-      --danger: #ff6b6b;
-      --input: #11141a;
-      --shadow: 0 12px 30px rgba(0,0,0,.28);
+      color-scheme: dark;
+      --bg: #0b111b;
+      --surface: #111a27;
+      --surface-raised: #172333;
+      --line: #263648;
+      --text: #f4f8fb;
+      --muted: #96a8b9;
+      --accent: #63e4c0;
+      --accent-strong: #26cfa3;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .22);
     }
 
     * { box-sizing: border-box; }
 
     body {
-      margin: 0;
-      background: linear-gradient(180deg, #0d0f13, #13161c 45%, #0d0f13);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", Arial, sans-serif;
+      min-width: 320px;
       min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 82% 5%, rgba(40, 166, 155, .13), transparent 32rem),
+        radial-gradient(circle at 4% 28%, rgba(70, 103, 191, .11), transparent 29rem),
+        var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      letter-spacing: -.025em;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .wrap {
-      max-width: 1100px;
+    button, select, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+    .page {
+      width: min(1180px, 100%);
       margin: 0 auto;
-      padding: 28px 16px 48px;
+      padding: 30px 28px 72px;
     }
+
+    .topbar, .brand, .topbar-badge, .section-head, .controls,
+    .item-main, .rate-value, .panel-note { display: flex; align-items: center; }
+
+    .topbar { justify-content: space-between; gap: 16px; }
+    .brand { gap: 12px; text-decoration: none; color: inherit; }
+    .brand-mark {
+      display: grid;
+      width: 39px;
+      height: 39px;
+      place-items: center;
+      border-radius: 12px;
+      color: #09231f;
+      background: linear-gradient(145deg, #9ff5d9, #36cfae);
+      box-shadow: 0 8px 22px rgba(54, 207, 174, .17);
+    }
+    .brand-mark svg { width: 23px; height: 23px; }
+    .brand-name { font-size: 13px; font-weight: 850; letter-spacing: .07em; }
+    .brand-name span { color: var(--accent); }
+    .topbar-badge {
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #c3d2de;
+      background: rgba(23, 35, 51, .62);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
 
     .hero {
-      margin-bottom: 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      align-items: end;
+      gap: 36px;
+      padding: 73px 0 36px;
     }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(26px, 5vw, 40px);
-      letter-spacing: -0.04em;
-    }
-
-    .sub {
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 18px 0;
-    }
-
-    button, select {
-      border: 1px solid var(--line);
-      background: var(--panel-2);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 14px;
-    }
-
-    button {
-      cursor: pointer;
-      transition: .15s ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      border-color: #46516a;
-    }
-
-    .primary {
-      background: var(--accent);
-      border-color: transparent;
-      color: white;
-      font-weight: 700;
-    }
-
-    .card {
-      width: min(100%, 430px);
-      background: rgba(23, 26, 33, .96);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-
-    .table-scroll {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: fixed;
-    }
-
-    th, td {
-      border-bottom: 1px solid var(--line);
-      padding: 12px;
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    th {
-      background: #141820;
-      color: #cbd4df;
-      font-size: 13px;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tbody tr:hover {
-      background: rgba(255,255,255,.02);
-    }
-
-    input {
-      width: 100%;
-      border: 1px solid var(--line);
-      background: var(--input);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 10px 11px;
-      font-size: 15px;
-      outline: none;
-      text-align: center;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(124,156,255,.12);
-    }
-
-    .item-cell {
-      text-align: left;
-    }
-
-    .item-column {
-      width: 230px;
-      text-align: left;
-    }
-
-    .rate-column,
-    .rate {
-      text-align: left;
-    }
-
-    .item-name {
-      margin-bottom: 7px;
-    }
-
-    .currency-input {
-      position: relative;
-      width: min(180px, 100%);
-    }
-
-    .currency-input input {
-      height: 34px;
-      padding: 6px 31px 6px 9px;
-      border-radius: 8px;
-      font-size: 13px;
-    }
-
-    .currency-input::after {
-      content: "원";
-      position: absolute;
-      top: 50%;
-      right: 10px;
-      color: var(--muted);
-      font-size: 12px;
-      pointer-events: none;
-      transform: translateY(-50%);
-    }
-
-    .rate {
-      font-size: 18px;
+    .eyebrow {
+      margin: 0 0 13px;
+      color: var(--accent);
+      font-size: 11px;
       font-weight: 800;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(33px, 5vw, 56px);
+      font-weight: 830;
+      line-height: 1.18;
+      letter-spacing: -.065em;
+    }
+    h1 span { color: var(--accent); }
+    .hero-copy {
+      margin: 17px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .formula-card {
+      padding: 19px 21px;
+      border: 1px solid #29443f;
+      border-radius: 17px;
+      background: linear-gradient(135deg, rgba(63, 187, 154, .12), rgba(18, 38, 46, .85));
+    }
+    .formula-label { color: #a4cdbf; font-size: 12px; font-weight: 750; }
+    .formula {
+      margin: 8px 0 6px;
+      color: #e6fff3;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -.04em;
       white-space: nowrap;
     }
+    .formula span { color: var(--accent); }
+    .formula-caption { color: #9cb5af; font-size: 11px; line-height: 1.5; }
 
-    .fixed-value {
-      font-weight: 700;
-      line-height: 1.45;
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 44px; }
+    .stat {
+      position: relative;
+      min-height: 115px;
+      overflow: hidden;
+      padding: 21px 23px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(20, 31, 45, .86);
+      box-shadow: var(--shadow);
     }
-
-    .delete {
-      background: transparent;
-      color: var(--danger);
-      border-color: rgba(255,107,107,.28);
+    .stat::after {
+      position: absolute;
+      top: -28px;
+      right: -18px;
+      width: 105px;
+      height: 105px;
+      border: 1px solid rgba(255, 255, 255, .045);
+      border-radius: 50%;
+      content: "";
     }
+    .stat:first-child { border-color: #31564e; background: linear-gradient(130deg, rgba(31, 89, 74, .52), rgba(20, 31, 45, .9)); }
+    .stat-label { color: #9fb0bf; font-size: 12px; font-weight: 650; }
+    .stat-value { margin-top: 13px; font-size: clamp(22px, 2.6vw, 30px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.045em; }
+    .stat-value.accent { color: var(--accent); }
+    .stat-value small { margin-left: 3px; color: #adbfcb; font-size: 13px; font-weight: 650; }
 
-    .empty {
-      color: var(--muted);
-      font-weight: 500;
+    .section-head { justify-content: space-between; gap: 24px; margin: 0 0 17px; }
+    .section-kicker { margin: 0 0 6px; color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+    h2 { margin: 0; font-size: 25px; font-weight: 800; letter-spacing: -.045em; }
+    .section-desc { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+    .controls { gap: 9px; flex-shrink: 0; }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      position: absolute;
+      top: 50%;
+      right: 15px;
+      width: 7px;
+      height: 7px;
+      border-right: 1.5px solid #aebfc9;
+      border-bottom: 1.5px solid #aebfc9;
+      transform: translateY(-70%) rotate(45deg);
+      pointer-events: none;
+      content: "";
     }
-
-    .note {
-      padding: 14px 16px;
-      color: var(--muted);
+    select, .reset-button {
+      height: 41px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: #e4ebf1;
+      background: var(--surface-raised);
       font-size: 13px;
-      border-top: 1px solid var(--line);
-      line-height: 1.6;
+      font-weight: 650;
+    }
+    select { min-width: 156px; padding: 0 38px 0 14px; appearance: none; cursor: pointer; }
+    .reset-button { padding: 0 15px; transition: border-color .15s, background .15s; }
+    .reset-button:hover:not(:disabled) { border-color: #597183; background: #223145; }
+    .reset-button:disabled { opacity: .43; }
+
+    .list-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); }
+    .list-header, .item-row { display: grid; grid-template-columns: minmax(240px, 1.7fr) minmax(200px, 1.25fr) minmax(175px, .9fr); column-gap: 24px; align-items: center; }
+    .list-header {
+      min-height: 52px;
+      padding: 0 25px;
+      border-bottom: 1px solid var(--line);
+      color: #8fa2b3;
+      background: #152130;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+    .list-header div:last-child { text-align: right; }
+    .item-row { min-height: 103px; padding: 15px 25px; border-bottom: 1px solid #233243; transition: background .15s; }
+    .item-row:last-child { border-bottom: 0; }
+    .item-row:hover { background: #162333; }
+    .item-main { min-width: 0; gap: 15px; }
+    .item-icon {
+      display: grid;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, .09);
+      border-radius: 13px;
+      font-size: 16px;
+      font-weight: 850;
+    }
+    .tone-1 { color: #a5d6ff; background: linear-gradient(145deg, #293e6e, #1a2b47); }
+    .tone-2 { color: #c9b4ff; background: linear-gradient(145deg, #493a72, #30284a); }
+    .tone-3 { color: #9ce5d2; background: linear-gradient(145deg, #26554d, #1a3836); }
+    .tone-4 { color: #ffd5a2; background: linear-gradient(145deg, #674532, #3c2e2a); }
+    .tone-5 { color: #ffb7c4; background: linear-gradient(145deg, #713e52, #442d3b); }
+    .tone-6 { color: #b3dcff; background: linear-gradient(145deg, #33526b, #203744); }
+    .item-name { overflow: hidden; color: #f1f6fa; font-size: 15px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+    .item-cash { margin-top: 6px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .mobile-label { display: none; }
+    .price-field { position: relative; width: 100%; max-width: 315px; }
+    .price-field input {
+      width: 100%;
+      height: 46px;
+      padding: 0 54px 0 14px;
+      border: 1px solid #334658;
+      border-radius: 10px;
+      outline: 0;
+      color: var(--text);
+      background: #0d1723;
+      font-size: 15px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .price-field input::placeholder { color: #6f8292; font-weight: 450; }
+    .price-field input:focus { border-color: var(--accent-strong); box-shadow: 0 0 0 3px rgba(57, 214, 172, .13); }
+    .field-unit { position: absolute; top: 50%; right: 15px; color: #9aacb9; font-size: 12px; font-weight: 650; transform: translateY(-50%); pointer-events: none; }
+    .rate-block { text-align: right; }
+    .rate-value { justify-content: flex-end; gap: 6px; min-height: 24px; color: var(--accent); font-size: 20px; font-weight: 830; font-variant-numeric: tabular-nums; letter-spacing: -.04em; white-space: nowrap; }
+    .rate-value.pending { color: #738797; }
+    .best-tag { display: inline-block; margin-left: 5px; padding: 4px 6px; border-radius: 5px; color: #092a22; background: var(--accent); font-size: 9px; font-weight: 900; letter-spacing: .04em; vertical-align: middle; }
+    .rate-sub { margin-top: 6px; color: #8195a6; font-size: 11px; }
+    .panel-note { gap: 10px; padding: 16px 25px; border-top: 1px solid var(--line); color: #94a8b8; background: #14202e; font-size: 12px; line-height: 1.55; }
+    .info-icon { display: grid; width: 18px; height: 18px; flex: 0 0 auto; place-items: center; border: 1px solid #547469; border-radius: 50%; color: #a1e4c7; font-size: 11px; font-weight: 800; }
+    .page-footer { margin-top: 23px; color: #6f8393; font-size: 11px; text-align: center; }
+
+    @media (max-width: 800px) {
+      .page { padding: 22px 18px 50px; }
+      .hero { grid-template-columns: 1fr; gap: 25px; padding-top: 56px; }
+      .formula-card { max-width: 420px; }
+      .stats { gap: 10px; margin-bottom: 37px; }
+      .stat { padding: 17px; min-height: 105px; }
+      .list-header, .item-row { grid-template-columns: minmax(190px, 1.5fr) minmax(170px, 1fr) minmax(130px, .8fr); gap: 12px; }
+      .list-header, .item-row { padding-left: 18px; padding-right: 18px; }
     }
 
-    @media (max-width: 640px) {
-      .wrap { padding-top: 20px; }
-      .toolbar { display: grid; grid-template-columns: 1fr 1fr; }
-      .toolbar button, .toolbar select { width: 100%; }
+    @media (max-width: 630px) {
+      .hero { padding-top: 49px; }
+      .hero-copy { font-size: 14px; }
+      .formula-card { max-width: none; }
+      .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+      .stat { min-height: 94px; padding: 14px 11px; border-radius: 13px; }
+      .stat-label { font-size: 10px; }
+      .stat-value { margin-top: 14px; font-size: 19px; }
+      .stat-value small { display: block; margin: 5px 0 0; font-size: 10px; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 18px; }
+      .controls { width: 100%; }
+      .select-wrap { flex: 1; }
+      select { width: 100%; }
+      .list-header { display: none; }
+      .item-row { grid-template-columns: minmax(0, 1fr); gap: 15px; min-height: auto; padding: 19px 16px; }
+      .item-icon { width: 42px; height: 42px; }
+      .mobile-label { display: block; margin-bottom: 8px; color: #879ba9; font-size: 11px; font-weight: 650; }
+      .rate-block { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 3px; text-align: left; }
+      .rate-block .mobile-label { margin: 0; }
+      .rate-value { min-height: 24px; font-size: 18px; white-space: normal; text-align: right; overflow-wrap: anywhere; }
+      .rate-sub { display: none; }
+      .price-field input { height: 46px; padding-left: 10px; padding-right: 42px; font-size: 14px; }
+      .field-unit { right: 10px; font-size: 11px; }
+      .panel-note { padding: 15px 16px; align-items: flex-start; }
+    }
+
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .stat:first-child { grid-column: 1 / -1; min-height: 83px; }
+      .stat-value { overflow-wrap: anywhere; }
+      .stat:first-child .stat-value small { display: inline; margin-left: 3px; }
+    }
+
+    @media (max-width: 370px) {
+      .page { padding-left: 12px; padding-right: 12px; }
+      .topbar-badge { padding: 7px 9px; font-size: 11px; }
+      .brand-name { font-size: 12px; }
+      .rate-value { font-size: 16px; }
+      .best-tag { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="hero">
-      <h1>경매장 테라 환전비 계산기</h1>
-      <div class="sub">
-        경매장 가격을 입력하면 물품별 환전비를 계산합니다.
+  <main class="page">
+    <header class="topbar">
+      <div class="brand" aria-label="테라 마켓 계산기">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15m0 0-4-4m4 4-4 4M20 16H5m0 0 4-4m-4 4 4 4"/></svg>
+        </span>
+        <span class="brand-name">TERA <span>MARKET</span></span>
       </div>
-    </div>
+      <div class="topbar-badge"><span class="status-dot" aria-hidden="true"></span>입력 즉시 계산</div>
+    </header>
 
-    <div class="toolbar">
-      <select id="sortSelect" aria-label="정렬">
-        <option value="none">기본 순서</option>
-        <option value="high">환전비 높은 순</option>
-        <option value="low">환전비 낮은 순</option>
-      </select>
-    </div>
-
-    <div class="card">
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th class="item-column">물품명</th>
-              <th class="rate-column">환전비</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Auction exchange calculator</p>
+        <h1 id="page-title">경매장 테라<br><span>환전비 계산기</span></h1>
+        <p class="hero-copy">경매장 가격을 입력하면 물품별 환전비를 바로 비교할 수 있어요.</p>
       </div>
-    </div>
-  </div>
+      <div class="formula-card" aria-label="계산 기준">
+        <div class="formula-label">계산 기준</div>
+        <div class="formula">경매가 <span>× 90%</span> ÷ 현금가</div>
+        <div class="formula-caption">경매장 수수료 10%를 제외한 환전비입니다.</div>
+      </div>
+    </section>
+
+    <section class="stats" aria-label="계산 요약">
+      <div class="stat"><div class="stat-label">가격 입력 완료</div><div class="stat-value accent" id="filledCount">0 <small>/ 6개 물품</small></div></div>
+      <div class="stat"><div class="stat-label">가장 높은 환전비</div><div class="stat-value" id="bestRate">—</div></div>
+      <div class="stat"><div class="stat-label">평균 환전비</div><div class="stat-value" id="averageRate">—</div></div>
+    </section>
+
+    <section aria-labelledby="market-heading">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">MARKET COMPARISON</p>
+          <h2 id="market-heading">물품별 시세 비교</h2>
+          <p class="section-desc">경매장 가격을 테라 단위로 입력해 주세요.</p>
+        </div>
+        <div class="controls">
+          <label class="select-wrap">
+            <span class="sr-only">정렬 방식</span>
+            <select id="sortSelect">
+              <option value="none">기본 순서</option>
+              <option value="high">환전비 높은 순</option>
+              <option value="low">환전비 낮은 순</option>
+            </select>
+          </label>
+          <button class="reset-button" id="resetButton" type="button" disabled>전체 초기화</button>
+        </div>
+      </div>
+
+      <div class="list-panel">
+        <div class="list-header" aria-hidden="true"><div>물품 · 현금가</div><div>경매장 가격</div><div>환전비</div></div>
+        <div id="itemList" role="list"></div>
+        <div class="panel-note"><span class="info-icon" aria-hidden="true">i</span><span>환전비는 현금 1원당 얻는 테라를 뜻하며, 경매장 수수료 10%를 반영합니다.</span></div>
+      </div>
+    </section>
+    <div class="page-footer">TERA MARKET · 경매장 가격 비교 도구</div>
+  </main>
 
   <script>
-    const tbody = document.getElementById("tbody");
-    const sortSelect = document.getElementById("sortSelect");
-
-    // 물품명과 현금 가격은 이 목록에서만 변경할 수 있습니다.
     const FIXED_ITEMS = [
-      { id: "item-1", name: "바인드큐브", cash: 1000 },
-      { id: "item-2", name: "촉매제", cash: 2500 },
-      { id: "item-3", name: "마스터계약", cash: 5000 },
-      { id: "item-4", name: "아티팩트", cash: 33000 },
-      { id: "item-5", name: "주또주", cash: 38900 },
-      { id: "item-6", name: "이클립스 바큐", cash: 1900 }
-
+      { id: "item-1", name: "바인드큐브", cash: 1000, icon: "바" },
+      { id: "item-2", name: "촉매제", cash: 2500, icon: "촉" },
+      { id: "item-3", name: "마스터계약", cash: 5000, icon: "마" },
+      { id: "item-4", name: "아티팩트", cash: 33000, icon: "아" },
+      { id: "item-5", name: "주또주", cash: 38900, icon: "주" },
+      { id: "item-6", name: "이클립스 바큐", cash: 1900, icon: "이" }
     ];
 
-    let rows = FIXED_ITEMS.map(item => ({ ...item, auction: "" }));
+    const itemList = document.getElementById("itemList");
+    const sortSelect = document.getElementById("sortSelect");
+    const resetButton = document.getElementById("resetButton");
+    const filledCount = document.getElementById("filledCount");
+    const bestRate = document.getElementById("bestRate");
+    const averageRate = document.getElementById("averageRate");
+    const rows = FIXED_ITEMS.map((item, index) => ({ ...item, index, auction: "" }));
+    const numberFormat = new Intl.NumberFormat("ko-KR");
+    const rateFormat = new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 });
 
-    function numberOnly(value) {
-      return Number(String(value).replace(/\D/g, "")) || 0;
+    function digitsOnly(value) {
+      return String(value ?? "").replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 15);
     }
 
-    function normalizeCurrency(value) {
-      return String(value ?? "")
-        .replace(/\D/g, "")
-        .replace(/^0+(?=\d)/, "");
-    }
-
-    function formatCurrencyInput(value) {
-      const digits = normalizeCurrency(value);
-      return digits ? Number(digits).toLocaleString("ko-KR") : "";
+    function formatPrice(value) {
+      return value ? numberFormat.format(Number(value)) : "";
     }
 
     function getRate(row) {
-      const auction = numberOnly(row.auction);
-      const cash = numberOnly(row.cash);
-      if (!auction || !cash) return 0;
-      return (auction * 0.9) / cash;
+      const price = Number(row.auction);
+      return price > 0 ? price * .9 / row.cash : 0;
+    }
+
+    function formatRate(value) {
+      return rateFormat.format(Math.round(value * 100) / 100);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
     }
 
     function render() {
-      let displayRows = [...rows];
-      const sort = sortSelect.value;
+      const entered = rows.filter(row => getRate(row) > 0);
+      const highest = Math.max(0, ...entered.map(getRate));
+      const average = entered.length ? entered.reduce((sum, row) => sum + getRate(row), 0) / entered.length : 0;
+      const sorted = [...rows];
+      const direction = sortSelect.value;
 
-      if (sort === "high") {
-        displayRows.sort((a, b) => getRate(b) - getRate(a));
-      } else if (sort === "low") {
-        displayRows.sort((a, b) => getRate(a) - getRate(b));
+      if (direction !== "none") {
+        sorted.sort((a, b) => {
+          const aRate = getRate(a);
+          const bRate = getRate(b);
+          if (!aRate && bRate) return 1;
+          if (aRate && !bRate) return -1;
+          const difference = direction === "high" ? bRate - aRate : aRate - bRate;
+          return difference || a.index - b.index;
+        });
       }
 
-      tbody.innerHTML = "";
-
-      displayRows.forEach(row => {
+      itemList.innerHTML = sorted.map(row => {
         const rate = getRate(row);
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="fixed-value item-cell">
-            <div class="item-name">${escapeHtml(row.name)}</div>
-            <div class="currency-input">
-              <input data-id="${row.id}" data-field="auction" inputmode="numeric"
-                value="${formatCurrencyInput(row.auction)}" placeholder="예: 1,000,000"
-                aria-label="${escapeHtml(row.name)} 경매장 가격(원)">
+        const isBest = rate > 0 && rate === highest;
+        return `
+          <div class="item-row" role="listitem">
+            <div class="item-main">
+              <div class="item-icon tone-${row.index + 1}" aria-hidden="true">${escapeHtml(row.icon)}</div>
+              <div>
+                <div class="item-name">${escapeHtml(row.name)}</div>
+                <div class="item-cash">현금가 ₩${numberFormat.format(row.cash)}</div>
+              </div>
             </div>
-          </td>
-          <td class="rate">
-            ${rate ? `1 : ${formatRate(rate)}` : '<span class="empty">-</span>'}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+            <div>
+              <span class="mobile-label" aria-hidden="true">경매장 가격</span>
+              <div class="price-field">
+                <input data-id="${row.id}" type="text" inputmode="numeric" autocomplete="off" maxlength="20"
+                  value="${formatPrice(row.auction)}" placeholder="가격 입력"
+                  aria-label="${escapeHtml(row.name)} 경매장 가격 (테라)" />
+                <span class="field-unit" aria-hidden="true">테라</span>
+              </div>
+            </div>
+            <div class="rate-block">
+              <span class="mobile-label" aria-hidden="true">환전비</span>
+              <div class="rate-value${rate ? "" : " pending"}">${rate ? `1 : ${formatRate(rate)}` : "—"}${isBest ? '<span class="best-tag">BEST</span>' : ""}</div>
+              <div class="rate-sub">1원당 테라</div>
+            </div>
+          </div>`;
+      }).join("");
+
+      filledCount.innerHTML = `${entered.length} <small>/ ${rows.length}개 물품</small>`;
+      bestRate.textContent = entered.length ? `1 : ${formatRate(highest)}` : "—";
+      averageRate.textContent = entered.length ? `1 : ${formatRate(average)}` : "—";
+      resetButton.disabled = !rows.some(row => row.auction !== "");
     }
 
-    function formatRate(rate) {
-      const rounded = Math.round(rate * 100) / 100;
-      return rounded.toLocaleString("ko-KR", {
-        maximumFractionDigits: 2
-      });
+    function caretAfterDigits(formatted, digitCount) {
+      if (!digitCount) return 0;
+      let seen = 0;
+      for (let position = 0; position < formatted.length; position++) {
+        if (/\d/.test(formatted[position])) seen++;
+        if (seen === digitCount) return position + 1;
+      }
+      return formatted.length;
     }
 
-    function escapeHtml(str) {
-      return String(str ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    tbody.addEventListener("input", (e) => {
-      const id = e.target.dataset.id;
-      const field = e.target.dataset.field;
-      if (!id || field !== "auction") return;
-
-      const row = rows.find(r => r.id === id);
+    itemList.addEventListener("input", event => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      const row = rows.find(item => item.id === input.dataset.id);
       if (!row) return;
 
-      row[field] = normalizeCurrency(e.target.value);
-
-      const currentFocusId = id;
+      const cursorDigits = (input.value.slice(0, input.selectionStart ?? input.value.length).match(/\d/g) || []).length;
+      row.auction = digitsOnly(input.value);
       render();
-      const input = tbody.querySelector(`[data-id="${currentFocusId}"][data-field="auction"]`);
-      if (input) {
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
+
+      const replacement = itemList.querySelector(`[data-id="${row.id}"]`);
+      if (replacement) {
+        replacement.focus();
+        const cursor = caretAfterDigits(replacement.value, cursorDigits);
+        replacement.setSelectionRange(cursor, cursor);
       }
     });
 
     sortSelect.addEventListener("change", render);
+    resetButton.addEventListener("click", () => {
+      rows.forEach(row => { row.auction = ""; });
+      render();
+    });
 
     render();
   </script>
